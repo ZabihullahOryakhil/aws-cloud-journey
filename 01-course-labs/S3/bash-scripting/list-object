@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+
+if [ -z "$1" ]; then
+    echo "You should specify the bucket name in order to list the objects inside that bucket eg.. bucket-singh"
+    exit 1
+fi
+
+aws s3api list-objects-v2 \
+--bucket "$1" \
+--query 'Contents[].Key'

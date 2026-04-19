@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "There needs to be a bucket name eg.. /bucket my-bucket-name"
+    echo "There needs to be a region specified eg... us"
+    exit 1
+fi
+
+
+aws s3api create-bucket --bucket "$1" --region "$2" 

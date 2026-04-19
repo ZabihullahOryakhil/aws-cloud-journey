@@ -1,0 +1,40 @@
+# --- OS Clutter ---
+.DS_Store
+Thumbs.db
+
+# --- Logs and Debugging ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Python ---
+# Virtual environments
+venv/
+.venv/
+env/
+bin/
+lib/
+# Compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Terraform ---
+# Local config and state
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+# Crash logs
+crash.log
+# Infrastructure as Code plans
+*.tfplan
+
+# --- AWS & Secrets ---
+# NEVER commit these if they appear
+.aws/
+credentials
+.env
+.secrets

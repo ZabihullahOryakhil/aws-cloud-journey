@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+ 
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "You shoud specify the bucket name and the file name both"
+    exit 1
+fi
+
+
+aws s3api delete-object --bucket $1 --key $2

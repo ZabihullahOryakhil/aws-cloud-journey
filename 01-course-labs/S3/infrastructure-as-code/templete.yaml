@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: My first CloudFormation template
+
+Resources:
+  MyFirstBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: new-bucket-janan1235
+
+

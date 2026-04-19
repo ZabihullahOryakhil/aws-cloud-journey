@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# List the 5 most recently created S3 buckets using AWS S3 API
+
+#aws s3api list-buckets \
+ # --query 'sort_by(Buckets, &CreationDate)[-5:] | reverse(@)[].Name' --output text
+
+# the newest bucket
+aws s3api list-buckets \
+  --query 'sort_by(Buckets, &CreationDate)[-1] .Name' --output text
