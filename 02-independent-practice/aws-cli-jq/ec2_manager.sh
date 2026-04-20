@@ -1,4 +1,4 @@
-#!/bin/bash
+4#!/bin/bash
 
 LOGFILE="$HOME/Desktop/aws_cli/ec2_manager.log"
 TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
