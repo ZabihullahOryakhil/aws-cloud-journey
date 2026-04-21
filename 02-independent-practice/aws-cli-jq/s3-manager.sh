@@ -13,7 +13,7 @@ fi
 BUCKET=$1
 REGION="us-east-1"
 WORKDIR="$HOME/Desktop/Cloud/aws-cloud-journey/02-independent-practice/aws-cli-jq/test-file"
-LOGFILE="$HOME/Desktop/Cloud/aws-cloud-journey/02-independent-practice/s3_manager.log"
+LOGFILE="$HOME/Desktop/Cloud/aws-cloud-journey/02-independent-practice/aws-cli-jq/s3_manager.log"
 TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 CLEANUP=false
 
