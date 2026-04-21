@@ -38,3 +38,4 @@ crash.log
 credentials
 .env
 .secrets
+*.txt
