@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 # Listing EC2 instances
 # aws ec2 describe-instances --region us-east-1
@@ -39,11 +39,29 @@ aws ec2 describe-images \
     --region us-east-1
 
 # Step 2- Creating a key pair now
-aws ec2 create-key-pair \
+# aws ec2 create-key-pair \
+#     --key-name aws-practice-key \
+#     --query "KeyMaterial" \
+#     --output text > ~/.ssh/aws-practice-key.pem
+
+# chmod 400 ~/.ssh/aws-practice-key.pem
+
+aws ec2 run-instances \
+    --image-id ami-0d05471b100e9083f \
+    --instance-type t2.micro \
     --key-name aws-practice-key \
-    --query "KeyMaterial" \
-    --output text > ~/.ssh/aws-practice-key.pem
+    --region us-east-1 \
+    --tag-specifications \
+        'ResourceType=instance,Tags=[{Key=Name,Value=practice-server}]' \
+    --query "Instances[0].InstanceId" \
+    --output text
 
-chmod 400 ~/.ssh/aws-practice-key.pem
+# InstanceId= i-0d7ebd40cdefb5f36
 
-aws ec2 create-key-pair --key-name aws-practice-key --query 'KeyMaterial' --output text > ~/.ssh/aws-practice-key.pem
+# Check State of the instance
+aws ec2 describe-instances \
+    --instance-ids i-0d7ebd40cdefb5f36 \
+    --query "Reservations[].Instances[0].State.Name" \
+    --output text
+
+
