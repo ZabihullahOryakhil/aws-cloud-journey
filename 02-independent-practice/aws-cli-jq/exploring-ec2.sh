@@ -46,21 +46,21 @@ aws ec2 describe-images \
 
 # chmod 400 ~/.ssh/aws-practice-key.pem
 
-aws ec2 run-instances \
-    --image-id ami-0d05471b100e9083f \
-    --instance-type t2.micro \
-    --key-name aws-practice-key \
-    --region us-east-1 \
-    --tag-specifications \
-        'ResourceType=instance,Tags=[{Key=Name,Value=practice-server}]' \
-    --query "Instances[0].InstanceId" \
-    --output text
+# aws ec2 run-instances \
+#     --image-id ami-0d05471b100e9083f \
+#     --instance-type t2.micro \
+#     --key-name aws-practice-key \
+#     --region us-east-1 \
+#     --tag-specifications \
+#         'ResourceType=instance,Tags=[{Key=Name,Value=practice-server}]' \
+#     --query "Instances[0].InstanceId" \
+#     --output text
 
-# InstanceId= i-0d7ebd40cdefb5f36
+ INSTANCE_ID=i-08e8bb809e3dee6db
 
 # Check State of the instance
 aws ec2 describe-instances \
-    --instance-ids i-0d7ebd40cdefb5f36 \
+    --instance-ids $INSTANCE_ID \
     --query "Reservations[].Instances[0].State.Name" \
     --output text
 

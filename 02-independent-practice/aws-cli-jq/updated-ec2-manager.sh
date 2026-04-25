@@ -55,7 +55,7 @@ if [ "$ACTION" == "list" ]; then
         exit 1
     fi
 
-    COUNT=$(echo $RESULT | jq 'length')
+    COUNT=$(echo "$RESULT" | jq 'length')
 
     if [ "$COUNT" -eq 0 ]; then
         log "No instances found in $REGION"
@@ -67,7 +67,7 @@ if [ "$ACTION" == "list" ]; then
 
     echo $RESULT | jq -r '.[] |
         "   ID  : " + .InstanceId +
-        "\n     Name    : " + (.Tags[]? | select(.Key=="Name") | .Value) +
+        "\n     Name    : " + (.Tags[]? | select(.Key=="Name") | .Value) // "No Name" +
         "\n     Type    : " + .InstanceType +
         "\n     State   : " + .State.Name +
         "\n     IP      : " + (.PublicIpAddress // "no public IP") +
@@ -247,7 +247,7 @@ elif [ "$ACTION" == "terminate" ]; then
         log "waiting for termination"
 
         aws ec2 wait instance-terminated \
-            --instnace-ids $INSTANCE_ID \
+            --instance-ids $INSTANCE_ID \
             --region $REGION
 
         log "Instance $INSTANCE_ID is Terminated"
