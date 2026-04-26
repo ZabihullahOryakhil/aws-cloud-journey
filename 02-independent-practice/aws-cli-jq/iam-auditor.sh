@@ -9,8 +9,25 @@ TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 KEY_AGE_LIMIT=90
 ISSUES=0
 
+# Functions 
 
-# Log Function
+check_policy_document_for_admin() {
+    POLICY_DOC=$1
+
+    [ -z "$POLICY_DOC" ] && return 1
+
+    echo "$POLICY_DOC" | jq -e '
+        .Statement |= if type=="object" then [.] else . end |
+        .Statement[] |
+        .Effect=="Allow" and (
+            .Action=="*" or
+            (.Action|type=="array" and index("*")) or
+            (.Action|tostring|contains("*"))
+        )
+    ' >/dev/null
+}
+
+# Functions - Log
 log () {
     local TS=$(date "+%Y-%m-%d %H:%M:%S")
     echo "  $1"
@@ -64,22 +81,75 @@ for USERNAME in $(echo "$USER_JSON" | jq -r '.Users[].UserName'); do
     echo "--------------------" >> $LOGFILE
 
 
-    # Check admin access
+    # Check admin access - Direct policies
     POLICIES=$(aws iam list-attached-user-policies \
         --user-name $USERNAME \
         --query "AttachedPolicies[].PolicyName" \
         --output text 2>/dev/null)
 
-    GROUPS=$(aws iam list-groups-for-user \
-        --user-name $USERNAME \
+    GROUPS_JSON=$(aws iam list-groups-for-user \
+        --user-name "$USERNAME" \
         --query "Groups[].GroupName" \
-        --output text 2>/dev/null)
+        --output json 2>/dev/null)
 
-    if echo "$POLICIES" | grep -qi "AdministratorAccess"; then
-        warning "$USERNAME has AdministratorAccess policy attached directly"
+    GROUP_COUNT=$(echo "$GROUPS_JSON" | jq '. | length')
+
+    if [ "$GROUP_COUNT" -eq 0 ]; then
+        warning "$USERNAME is not in any groups"
     else
-        ok "$USERNAME - no direct admin policy"
+        for GROUP in $(echo "$GROUPS_JSON" | jq -r '.[]'); do
+            
+
+            GROUP_POLICIES_JSON=$(aws iam list-attached-group-policies \
+                --group-name "$GROUP" \
+                --query "AttachedPolicies[].PolicyArn" \
+                --output json 2>/dev/null)
+            
+            
+
+            for POLICY_ARN in $(echo "$GROUP_POLICIES_JSON" | jq -r '.[]'); do
+                
+                POLICY_VERSION=$(aws iam get-policy \
+                    --policy-arn "$POLICY_ARN" \
+                    --query 'Policy.DefaultVersionId' \
+                    --output text 2>/dev/null)
+                
+                POLICY_DOC=$(aws iam get-policy-version \
+                    --policy-arn "$POLICY_ARN" \
+                    --version-id "$POLICY_VERSION" \
+                    --query 'PolicyVersion.Document' \
+                    --output json 2>/dev/null)
+
+                if check_policy_document_for_admin "$POLICY_DOC"; then
+                    warning "$USERNAME has ADMIN access via group $GROUP (policy: $POLICY_ARN)"
+                else
+                    ok "$USERNAME - no admin access via group $GROUP policy"
+                fi
+            done
+        done
     fi
+
+    # Checking for Inline user policies
+    INLINE_POLICIES=$(aws iam list-user-policies \
+        --user-name "$USERNAME" \
+        --query "PolicyNames[]" \
+        --output text 2>/dev/null)        
+
+    for POLICY_NAME in $INLINE_POLICIES; do
+        POLICY_DOC=$(aws iam get-user-policy \
+            --user-name "$USERNAME" \
+            --policy-name "$POLICY_NAME" \
+            --query 'PolicyDocument' \
+            --output json 2>/dev/null)
+        if check_policy_document_for_admin "$POLICY_DOC"; then
+            warning "$USERNAME has ADMIN access via inline policy $POLICY_NAME"
+        fi
+    done
+
+    if ! echo "$POLICIES" | grep -qi "AdministratorAccess"; then
+        ok "$USERNAME - no direct admin policy found"
+    fi
+
 
     # Check for MFA enabled
     MFA=$(aws iam list-mfa-devices \
@@ -96,7 +166,7 @@ for USERNAME in $(echo "$USER_JSON" | jq -r '.Users[].UserName'); do
     KEY_JSON=$(aws iam list-access-keys \
         --user-name $USERNAME 2>/dev/null)
 
-    KEY_COUNT=$(echo $KEY_JSON | jq -r '.AccessKeyMetadata | length')
+    KEY_COUNT=$(echo "$KEY_JSON" | jq -r '.AccessKeyMetadata | length')
 
     if [ $KEY_COUNT -eq 0 ]; then
         ok "$USERNAME - no access key "
