@@ -45,3 +45,56 @@ for BUCKET in $BUCKETS; do
     fi
 
     log "Region: $REGION"
+
+    # TODO 2: Check Versioning 
+    VERSIONING=$(aws s3api get-bucket-versioning --bucket "$BUCKET" | jq -r '.Status // "Disabled"')
+
+    if [ "$VERSIONING" == "Enabled" ]; then
+        ok "Versioning is enabled for $BUCKET"
+        SCORE=$((SCORE + 1))
+    else
+        warning "Versioning is NOT enabled for $BUCKET"
+    fi
+
+
+    # TODO 3: Check encryption
+    ENCRYPTION=$(aws s3api get-bucket-encryption --bucket "$BUCKET" | jq -r '.ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm // "None"')
+    if [ "$ENCRYPTION" != "None" ]; then
+        ok "Encryption is enabled using $ENCRYPTION"
+        SCORE=$((SCORE + 1))
+    else
+        warning "No default encryption found for $BUCKET"
+    fi
+
+
+    # TODO 4: Check public access block
+    PUBLIC_BLOCK=$(aws s3api get-public-access-block --bucket "$BUCKET" | jq -r '.PublicAccessBlockConfiguration | [.BlockPublicAcls, .IgnorePublicPolicy, .RestrictPublicBuckets] | all')
+
+    if [ "$PUBLIC_BLOCK" == "true" ]; then
+        ok "All Public Access Blocks are enabled for $BUCKET"
+        SCORE=$((SCORE + 1))
+    else
+        warning "Public Access Blocks are Not fully enabled for $BUCKET"
+    fi
+
+
+    TOTAL_SCORE=$((TOTAL_SCORE + SCORE))
+    echo " Security Score: $SCORE/3"
+    echo ""
+done
+
+# TODO 5: Summary
+echo ""
+echo "Summary"
+echo "Total Bucket(s): $TOTAL_BUCKETS"
+echo "Total Score: $TOTAL_SCORE"
+# AVERAGE_SCORE=$((TOTAL_SCORE / $TOTAL_BUCKETS)) - I forget to handle division by zero
+
+if [ "$TOTAL_BUCKETS" -gt 0 ]; then 
+    AVERAGE_BUCKETS=$(echo "scale=2, $TOTAL_SCORE / $TOTAL_BUCKETS" | bc -l)
+    echo "Average score per bucket: $AVERAGE_SCORE"
+else
+    echo "Average score per bucket: 0"
+fi
+
+echo "Average score per bucket: $AVERAGE_SCORE"
