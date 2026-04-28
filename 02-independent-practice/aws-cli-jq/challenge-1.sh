@@ -49,6 +49,13 @@ for BUCKET in $BUCKETS; do
     # TODO 2: Check Versioning 
     VERSIONING=$(aws s3api get-bucket-versioning --bucket "$BUCKET" | jq -r '.Status // "Disabled"')
 
+    # if not enabled print Disabled
+    if [ -z "$VERSIONING" ]; then
+        VERSIONING="Disabled"
+    fi
+    
+    log "Versioning Status: $VERSIONING"
+    
     if [ "$VERSIONING" == "Enabled" ]; then
         ok "Versioning is enabled for $BUCKET"
         SCORE=$((SCORE + 1))
@@ -58,7 +65,10 @@ for BUCKET in $BUCKETS; do
 
 
     # TODO 3: Check encryption
-    ENCRYPTION=$(aws s3api get-bucket-encryption --bucket "$BUCKET" | jq -r '.ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm // "None"')
+    ENCRYPTION=$(aws s3api get-bucket-encryption --bucket "$BUCKET" --region "$REGION" 2>/dev/null | jq -r '.ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm // "None"')
+
+    log "Encryption Status: $ENCRYPTION"
+
     if [ "$ENCRYPTION" != "None" ]; then
         ok "Encryption is enabled using $ENCRYPTION"
         SCORE=$((SCORE + 1))
@@ -68,7 +78,9 @@ for BUCKET in $BUCKETS; do
 
 
     # TODO 4: Check public access block
-    PUBLIC_BLOCK=$(aws s3api get-public-access-block --bucket "$BUCKET" | jq -r '.PublicAccessBlockConfiguration | [.BlockPublicAcls, .IgnorePublicPolicy, .RestrictPublicBuckets] | all')
+    PUBLIC_BLOCK=$(aws s3api get-public-access-block --bucket "$BUCKET" 2>/dev/null | jq -r '.PublicAccessBlockConfiguration | [.BlockPublicAcls, .IgnorePublicPolicy, .RestrictPublicBuckets] | all')
+
+    log "Public Block Status: $PUBLIC_BLOCK"
 
     if [ "$PUBLIC_BLOCK" == "true" ]; then
         ok "All Public Access Blocks are enabled for $BUCKET"
@@ -91,10 +103,10 @@ echo "Total Score: $TOTAL_SCORE"
 # AVERAGE_SCORE=$((TOTAL_SCORE / $TOTAL_BUCKETS)) - I forget to handle division by zero
 
 if [ "$TOTAL_BUCKETS" -gt 0 ]; then 
-    AVERAGE_BUCKETS=$(echo "scale=2, $TOTAL_SCORE / $TOTAL_BUCKETS" | bc -l)
+    AVERAGE_SCORE=$(echo "scale=2; $TOTAL_SCORE / $TOTAL_BUCKETS" | bc -l)
     echo "Average score per bucket: $AVERAGE_SCORE"
 else
     echo "Average score per bucket: 0"
 fi
 
-echo "Average score per bucket: $AVERAGE_SCORE"
+# echo "Average score per bucket: $AVERAGE_SCORE"
