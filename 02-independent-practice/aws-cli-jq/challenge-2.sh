@@ -19,6 +19,7 @@ LOGFILE="$HOME/Desktop/Cloud/aws-cloud-journey/02-independent-practice/aws-cli-j
 TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 TOTAL_INSTANCES=0
 UNTAGGED=0
+STOPPED_INSTANCES=0
 
 # Log
 log() { echo "  $1"; echo "[$1]" >> $LOGFILE; }
@@ -52,15 +53,35 @@ for REGION in $REGIONS; do
     TOTAL_INSTANCES=$((TOTAL_INSTANCES + INSTANCE_COUNT))
     log "Found $INSTANCE_COUNT instance in $REGION"
 
-
+    # TODO 4: loop throught all instances and print details
     echo "$INSTANCES" | jq -r '.Reservations[].Instances[] | 
-        "\(.InstanceId)\t\(.InstanceType)\t\(.State.Name)\t\( (.Tags[]? | select(.key=="Name").Value) \\ "NoName")"' | \
-    while read -r ISNTANCE_ID TYPE STATE NAME; do
-        if [ "$NAME" == "NoName" ]; do
+        "\(.InstanceId)\t\(.InstanceType)\t\(.State.Name)\t\(.LaunchTime)\t\( (.Tags[]? | select(.Key=="Name").Value) // "NoName")"' | \
+    while read -r INSTANCE_ID TYPE STATE RAW_TIME NAME; do
+        LAUNCH_DATE=$(echo "$RAW_TIME" | cut -d'T' -f1)
+        if [ "$NAME" == "NoName" ]; then
             UNTAGGED=$((UNTAGGED + 1))
             warning "Instances $INSTANCE_ID in $REGION has no Name tag!"
         else
             ok "Instance: $NAME ($INSTANCE_ID) | TYPE: $TYPE | State: $STATE"
         fi
+
+
+         # TODO 6: Filter the instances based on their state
+        if [ "$STATE" == "stopped" ]; then
+            STOPPED_INSTANCES=$((STOPPED_INSTANCES + 1))
+            log "NOTICE: $INSTANCE_ID is currently STOPPED!"
+            
+        elif [ "$STATE" == "running" ]; then
+            log "NOTICE: $INSTANCE_ID is currently RUNNING!"
+        fi
     done
-    
+done
+
+# TODO 7 final Summary
+echo ""
+log "------------------------------------------"
+log "Listing and Scanning Complete"
+log "Total Instances: $TOTAL_INSTANCES"
+log "Untagged:        $UNTAGGED"
+log "Stopped:         $STOPPED_INSTANCES"
+log "------------------------------------------"
