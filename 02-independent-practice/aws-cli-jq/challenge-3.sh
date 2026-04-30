@@ -40,7 +40,7 @@ GROUP_NAMES=$(aws iam list-groups | jq -r '.Groups[].GroupName')
 for GROUP in $GROUP_NAMES; do
     USER_COUNT=$(aws iam list-group --group-name $GROUP | jq '.Users | length')
 
-    echo "Group: $Group | Users: $USER_COUNT" | tee -a $REPORT_FILE
+    echo "Group: $GROUP | Users: $USER_COUNT" | tee -a $REPORT_FILE
 done
 
 
@@ -48,5 +48,47 @@ done
 echo "" | tee -a $REPORT_FILE
 echo "=== CUSTOMER POLICIES ===" | tee -a $REPORT_FILE
 
-POLICIES=$(aws iam list-policies --scope local | jq -r '.Policies[] | .PolicyName + " | Last Updated: " + .UpdatedDate' | tee -a $REPORT_FILE)
+POLICIES=$(aws iam list-policies --scope local | jq -r '.Policies[] | .PolicyName + " | Last Updated: " + .UpdateDate' | tee -a $REPORT_FILE)
 
+# TODO 5 + 6: for each user check console and programmatic access
+echo "" | tee -a $REPORT_FILE
+echo "=== ACCESS TYPE PER USER ===" | tee -a $REPORT_FILE
+
+#   getting all usernames
+USER_NAMES=$(aws iam list-users | jq -r '.Users[].UserName')
+
+for USER  in $USER_NAMES; do
+    # Check for console access
+    HAS_CONSOLE=$(aws iam get-login-profile --user-name $USER 2>/dev/null | jq -r '.LoginProfile.UserName' )
+    if [ "$HAS_CONSOLE" != "NULL" ] && [ -n "$HAS_CONSOLE" ]; then
+        CONSOLE="Console: YES"
+    else
+        CONSOLE="Console: NO"
+
+    fi
+
+    # Check for programmatic access
+    KEY_COUNT=$(aws iam list-access-keys --user-name $USER | jq '.AccessKeyMetaData | length')
+    if [ "$KEY_COUNT" -gt 0 ]; then
+        PROGRAM="Keys: Yes ($KEY_COUNT)"
+    else
+        PROGRAM="Keys: NO"
+    fi
+
+    echo "User: $USER | $CONSOLE | $PROGRAM" | tee -a $REPORT_FILE
+done
+
+
+# TODO 7: upload report to S3
+echo "" | tee -a $REPORT_FILE
+log "Uploading report to S3..."
+
+aws s3 cp "$REPORT_FILE" "s3://$S3_BUCKET/reports/iam_report_$TIMESTAMP.txt"
+
+if [ $? -eq 0 ]; then
+    echo "Uplaoded SuccessfullY..." | tee -a $REPORT_FILE
+    log "Uplaod Complete"
+else
+    echo "Error: Uplaoding Failed" | tee -a $REPORT_FILE
+    log "Uplaod Failed."
+fi
