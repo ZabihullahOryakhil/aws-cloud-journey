@@ -17,7 +17,7 @@
 
 REPORT_FILE="$HOME/Desktop/Cloud/aws-cloud-journey/02-independent-practice/aws-cli-jq/iam_full_report.txt"
 LOGFILE="$HOME/Desktop/Cloud/aws-cloud-journey/02-independent-practice/aws-cli-jq/challenge3.log"
-TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+TIMESTAMP=$(date "+%Y-%m-%d_%H-%M-%S")
 S3_BUCKET="new-janan1234"
 
 log() { echo "  $1"; echo "[$1]" >> $LOGFILE; }
@@ -28,7 +28,7 @@ echo "" | tee -a $REPORT_FILE
 # TODO 1: List all users with creation date
 echo "--- USERS ---" | tee -a $REPORT_FILE
 
-USERS=$(aws iam list-users | jq -r '.Users[] | .UserName + " | Created: " + .CreateDate')
+aws iam list-users | jq -r '.Users[] | .UserName + " | Created: " + .CreateDate' | tee -a $REPORT_FILE
 
 
 # TODO 2: List all groups and users count per group
@@ -38,7 +38,7 @@ echo "=== GROUPS ===" | tee -a $REPORT_FILE
 GROUP_NAMES=$(aws iam list-groups | jq -r '.Groups[].GroupName')
 
 for GROUP in $GROUP_NAMES; do
-    USER_COUNT=$(aws iam list-group --group-name $GROUP | jq '.Users | length')
+    USER_COUNT=$(aws iam get-group --group-name $GROUP | jq '.Users | length')
 
     echo "Group: $GROUP | Users: $USER_COUNT" | tee -a $REPORT_FILE
 done
@@ -48,7 +48,14 @@ done
 echo "" | tee -a $REPORT_FILE
 echo "=== CUSTOMER POLICIES ===" | tee -a $REPORT_FILE
 
-POLICIES=$(aws iam list-policies --scope local | jq -r '.Policies[] | .PolicyName + " | Last Updated: " + .UpdateDate' | tee -a $REPORT_FILE)
+aws iam list-policies --scope Local | jq -r '.Policies[] | .PolicyName + " | Last Updated: " + .UpdateDate' | tee -a $REPORT_FILE
+
+# TODO 4: IAM role listing
+echo "" | tee -a $REPORT_FILE
+echo "=== ROLES ===" | tee -a $REPORT_FILE
+aws iam list-roles | jq -r '.Roles[] | 
+    select(.Path | startswith("/aws-service-role") | not) |
+    .RoleName + " | created: " + .CreateDate' | tee -a $REPORT_FILE
 
 # TODO 5 + 6: for each user check console and programmatic access
 echo "" | tee -a $REPORT_FILE
@@ -68,7 +75,7 @@ for USER  in $USER_NAMES; do
     fi
 
     # Check for programmatic access
-    KEY_COUNT=$(aws iam list-access-keys --user-name $USER | jq '.AccessKeyMetaData | length')
+    KEY_COUNT=$(aws iam list-access-keys --user-name $USER | jq '.AccessKeyMetadata | length')
     if [ "$KEY_COUNT" -gt 0 ]; then
         PROGRAM="Keys: Yes ($KEY_COUNT)"
     else

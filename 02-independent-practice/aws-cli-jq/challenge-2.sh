@@ -58,6 +58,8 @@ for REGION in $REGIONS; do
         "\(.InstanceId)\t\(.InstanceType)\t\(.State.Name)\t\(.LaunchTime)\t\( (.Tags[]? | select(.Key=="Name").Value) // "NoName")"' | \
     while read -r INSTANCE_ID TYPE STATE RAW_TIME NAME; do
         LAUNCH_DATE=$(echo "$RAW_TIME" | cut -d'T' -f1)
+
+
         if [ "$NAME" == "NoName" ]; then
             UNTAGGED=$((UNTAGGED + 1))
             warning "Instances $INSTANCE_ID in $REGION has no Name tag!"
@@ -74,7 +76,8 @@ for REGION in $REGIONS; do
         elif [ "$STATE" == "running" ]; then
             log "NOTICE: $INSTANCE_ID is currently RUNNING!"
         fi
-    done
+    done < <(echo "$INSTANCES" | jq -r '.Reservations[].Instances[] | 
+        "\(.InstanceId)\t\(.InstanceType)\t\(.State.Name)\t\(.LaunchTime)\t\( (.Tags[]? | select(.Key=="Name").Value) // "NoName")"')
 done
 
 # TODO 7 final Summary
