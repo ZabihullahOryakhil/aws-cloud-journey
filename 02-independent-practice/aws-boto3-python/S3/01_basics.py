@@ -18,7 +18,7 @@ buckets = response['Buckets']
 print(f"Total buckets: {len(buckets)}")
 
 for bucket in buckets:
-    name = bucket['name']
+    name = bucket['Name']
     created = bucket['CreationDate']
     print(f"    Bucket: {name}")
     print(f"    Created: {created}")
@@ -33,7 +33,7 @@ print("-" * 20)
 BUCKET_NAME = "new-janan1235"
 
 try:
-    s3.create_bucket(bucket=BUCKET_NAME)
+    s3.create_bucket(Bucket=BUCKET_NAME)
     print(f"    Created: {BUCKET_NAME}")
 except s3.exceptions.BucketAlreadyOwnedByYou:
     print(f"    already exists: {BUCKET_NAME}")
@@ -52,9 +52,9 @@ with open("/tmp/boto3_test.txt", "w") as f:
 
 try:
     s3.upload_file(
-        Filename="tmp/boto3_test.txt"
-        Bucket=BUCKET_NAME
-        key="test/boto3_test.txt"
+        Filename="/tmp/boto3_test.txt",
+        Bucket=BUCKET_NAME,
+        Key="test/boto3_test.txt"
     )
     print(f"    Uploaded boto3_test.txt -> s3://{BUCKET_NAME}/test/")
 except Exception as e:
@@ -67,7 +67,7 @@ print(f"Objects in {BUCKET_NAME}")
 print("-" * 20)
 
 try:
-    objects: s3.list_objects_v2(Bucket=BUCKET_NAME)
+    objects = s3.list_objects_v2(Bucket=BUCKET_NAME)
 
     if objects['KeyCount'] == 0:
         print(" Empty bucket")
@@ -79,4 +79,44 @@ try:
 
 except Exception as e:
     print(f"    Error: {e}")
-    
+
+# Download the file back
+print("")
+print("-" * 20)
+print("Downloading file back")
+print("-" * 20)
+
+try:
+    s3.download_file(
+        Bucket=BUCKET_NAME,
+        Key="test/boto3_test.txt",
+        Filename="/tmp/boto3_downloaded.txt"
+    )
+    print(" Downloaded to /tmp/boto3_downloaded.txt")
+
+    with open("/tmp/boto3_downloaded.txt", "r") as f:
+        print(f"    Content: {f.read()}")
+except Exception as e:
+    print(f"    Download Error: {e}")
+
+
+
+# Delete the object
+print("")
+print("-" * 20)
+print("Deleting object")
+print("-" * 20)
+
+try:
+    s3.delete_object(
+        Bucket=BUCKET_NAME,
+        Key="text/boto3_test.txt"
+    )
+
+    print(f"    Deleted successfully: test/boto3_test.txt")
+
+except Exception as e:
+    print(f" Delete error: {e}")
+
+print("")
+print("Done")
