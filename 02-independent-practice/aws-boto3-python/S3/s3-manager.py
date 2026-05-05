@@ -110,7 +110,7 @@ def upload_file(local_path, bucket_name, key=None):
 # FUNCTION 5 - Download file
 def download_file(bucket_name, key, local_path=None):
     if local_path is None:
-        local_path = f"/tmp/{os.paht.basename(key)}"
+        local_path = f"/tmp/{os.path.basename(key)}"
 
     try:
         s3.download_file(
@@ -143,7 +143,7 @@ def list_objects(bucket_name):
         log(f"Objects in {bucket_name}:")
         for obj in objects:
             size_kb = round(obj['Size'] / 1024, 2)
-            print(f"    {obj['Key']} | {size_kb} KB | {obj['Lastmodified'].strftime('%Y-%m-%d')}")
+            print(f"    {obj['Key']} | {size_kb} KB | {obj['LastModified'].strftime('%Y-%m-%d')}")
         return objects
     except ClientError as e:
         log(f"Error listing objects: {e.response['Error']['Message']}")
@@ -180,5 +180,46 @@ def bucket_info(bucket_name):
         return info
     
     except ClientError as e:
-        log(f"Error listing objects: {e.response['Error']['Message']}")
-        return []
+        log(f"Error getting bucket info: {e.response['Error']['Message']}")
+        return {}
+    
+
+# MAIN - Runs when you execute the script
+if __name__ == "__main__":
+    BUCKET = "new-janan123456"
+
+    print("\n" + "-" * 45)
+    print("  S3 Manager — boto3")
+    print("-" * 45 + "\n")
+
+    # 1. List existing buckets
+    list_buckets()
+    print("")
+
+    # 2. Create a bucket
+    create_bucket(BUCKET)
+    print("")
+
+    # 3. Create and upload a test file
+    with open("/tmp/test_upload.txt", "w") as f:
+        f.write(f"boto3 upload test\nTime: {datetime.now()}")
+
+    upload_file("/tmp/test_upload.txt", BUCKET, "uploads/test.txt")
+    print("")
+
+    # list objects
+    list_objects(BUCKET)
+    print("")
+
+    # Get bucket info
+    bucket_info(BUCKET)
+    print("")
+
+    # Download the file back
+    path = download_file(BUCKET, "uploads/test.txt", "/tmp/downloaded.txt")
+    if path:
+        with open(path) as f:
+            print(f"    File contents: {f.read()}")
+
+    print("")
+
