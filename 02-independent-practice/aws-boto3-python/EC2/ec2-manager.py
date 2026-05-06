@@ -212,3 +212,5 @@ def create_instance(name, instance_type='t2.micro', ami_id=None):
             log(f"Error getting AMI: {e.response['Error']['Message']}")
             return None
         
+# git PUsh didn't work I don't know why
+        
