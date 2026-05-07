@@ -35,7 +35,7 @@ def list_instances(state_filter=None):
             instances = []
             for reservation in response['Reservations']:
                 for instance in reservation['Instances']:
-                    instances.append[instance]
+                    instances.append(instance)
 
             if not instances:
                 log(f"No instances found" + (f" with state: {state_filter}" if state_filter else ""))
@@ -80,7 +80,7 @@ def get_instance(instance_id):
     
 
 # FUNCTION 3 = Stop instnace
-def stop_instance(instance_id, wait=True)
+def stop_instance(instance_id, wait=True):
     instance = get_instance(instance_id)
     if not instance:
         return False
@@ -127,12 +127,12 @@ def start_instance(instance_id, wait=True):
         return False
     
     try:
-        ec2.start_instance(InstanceIds=[instance_id])
+        ec2.start_instances(InstanceIds=[instance_id])
         log(f"Start command sent: {instance_id}")
 
         if wait:
             log("Waiting for instance to be running...")
-            waiter = ec2.get_waiter("instance_runnig")
+            waiter = ec2.get_waiter("instance_running")
             waiter.wait(InstanceIds=[instance_id])
 
             # getting the new IP after start
@@ -170,12 +170,12 @@ def terminate_instance(instance_id):
         return False
     
     try:
-        ec2.terminate_instance(InstanceIds=[instance_id])
+        ec2.terminate_instances(InstanceIds=[instance_id])
         log(f"Terminate command sent: {instance_id}")
 
         log("waiting for termination...")
         waiter = ec2.get_waiter('instance_terminated')
-        waiter.wait(Instanceids=[instance_id])
+        waiter.wait(InstanceIds=[instance_id])
         log(f"Instance terminated: {instance_id}")
         return True
     
@@ -201,7 +201,7 @@ def create_instance(name, instance_type='t2.micro', ami_id=None):
             # sort by creation date and get latest
             sorted_images = sorted(
                 images['Images'],
-                key=lambda x: x['creationDate'],
+                key=lambda x: x['CreationDate'],
                 reverse=True
             )
 
@@ -211,6 +211,93 @@ def create_instance(name, instance_type='t2.micro', ami_id=None):
         except ClientError as e:
             log(f"Error getting AMI: {e.response['Error']['Message']}")
             return None
-        
-# git PUsh didn't work I don't know why
-        
+    
+    try:
+        response = ec2.run_instances(
+            ImageId=ami_id,
+            InstanceType=instance_type,
+            MinCount=1,
+            MaxCount=1,
+            TagSpecifications=[{
+                'ResourceType': 'instance',
+                'Tags': [{'Key': 'Name', 'Value': name}]
+            }]
+        )
+
+        instance_id = response['Instances'][0]['InstanceId']
+        log(f"Instance created: {instance_id}")
+        log(f"Waiting for instance to be running")
+
+        waiter = ec2.get_waiter('instance_running')
+        waiter.wait(InstanceIds=[instance_id])
+
+        instance = get_instance(instance_id)
+        ip = instance.get('PublicIpAddress', 'No IP')
+        log(f"Instance running: {instance_id}")
+        log(f"Public IP: {ip}")
+
+        return instance_id
+    
+    except ClientError as e:
+        log(f"error creating instance: {e.response['Error']['Message']}")
+        return None
+    
+
+
+# FUNCTION 7 - Multi Region Scan
+def scan_all_regions():
+    log("Scanning all regions for EC2 Instance..")
+    print("")
+
+    all_region = ec2.describe_regions()['Regions']
+    total = 0
+
+    for region in all_region:
+        region_name = region['RegionName']
+        regional_ec2 = boto3.client('ec2', region_name=region_name)
+
+        try:
+            response = regional_ec2.describe_instances()
+            instances = [
+                i
+                for r in response['Reservations']
+                for i in r['Instances']
+                if i['State']['Name'] != 'terminated'
+            ]
+
+            if instances:
+                print(f"  Region: {region_name} — {len(instances)} instance(s)")
+                for i in instances:
+                    name  = get_instance_name(i)
+                    state = i['State']['Name']
+                    print(f"    {i['InstanceId']} | {name} | {i['InstanceType']} | {state}")
+                total += len(instances)
+            else:
+                print(f"  Region: {region_name} — no instances")
+
+        except ClientError:
+            print(f"  Region: {region_name} — access denied or unavailable")
+
+    print("")
+    log(f"Total active instances across all regions: {total}")
+
+# MAIN
+
+if __name__ == "__main__":
+    print("\n" + "=" * 45)
+    print("  EC2 Manager — boto3")
+    print("=" * 45 + "\n")
+
+    # 1. List all instances
+    log("Listing all instances...")
+    list_instances()
+    print("")
+
+    # 2. List only running instances
+    log("Listing running instances only...")
+    list_instances(state_filter='running')
+    print("")
+
+    # 3. Scan all regions
+    scan_all_regions()
+    print("")
