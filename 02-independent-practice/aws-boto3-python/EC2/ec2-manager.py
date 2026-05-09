@@ -26,7 +26,7 @@ def list_instances(state_filter=None):
         filters = []
         if state_filter:
             filters.append({
-                'Name': 'instances-state-name',
+                'Name': 'instance-state-name',
                 'Values': [state_filter]
             })
 
