@@ -124,3 +124,72 @@ def scan_s3():
 
     return report
 
+
+
+# EC2 Scan
+def scan_ec2():
+    section("EC2 Instances")
+    report = []
+
+
+    try:
+        all_regions = ec2_client.describe_regions()['Regions']
+        log(f"Scanning {len(all_regions)} region(s)..")
+
+        for region in all_regions:
+            region_name = region['RegionName']
+            regional_ec2 = boto3.client('ec2', region_name=region_name)
+
+            try:
+                response = regional_ec2.describe_instances()
+                instances = [
+                    i
+                    for r in response['Reservations']
+                    for i in r['Instances']
+                    if i['State']['Name'] != 'terminated'
+                ]
+
+                if not instances:
+                    continue
+
+                print(f"\n Region: {region_name}")
+                for i in instances:
+                    name = get_tag(i.get('Tags'), 'Name') or 'No Name'
+                    state = i['State']['Name']
+                    ip = i.get('PublicIpAddress', 'NO IP')
+
+                    data = {
+                        'id':            i['InstanceId'],
+                        'name':          name,
+                        'type':          i['InstanceType'],
+                        'state':         state,
+                        'region':        region_name,
+                        'ip':            ip,
+                        'launched':      i['LaunchTime'].strftime('%Y-%m-%d'),
+                        'issues':        []
+                    }
+
+
+                    if name == 'No Name':
+                        data['issues'].append('No Name tag')
+
+                    if state == 'stopped':
+                        data['issues'].append('Instance is stopped')
+
+                    print(f"    {i['InstanceId']} | {name} | {i['InstanceType']} | {state} | {ip}")
+                    if data['issues']:
+                        for issue in data['issues']:
+                            print(f"    ⚠  {issue}")
+
+                    report.append(data)
+
+            except ClientError:
+                continue
+    except ClientError as e:
+        log(f"EC2 scan error: {e.response['Error']['Message']}")
+
+    if not report:
+        log("NO EC2 instances found across all regions")
+
+    return report
+
