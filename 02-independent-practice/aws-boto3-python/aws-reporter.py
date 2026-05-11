@@ -40,7 +40,7 @@ def scan_s3():
 
     try:
         response = s3_client.list_buckets()
-        buckets = response.get('buckets', [])
+        buckets = response.get('Buckets', [])
         log(f"Found {len(buckets)} bucket(s)")
 
         for bucket in buckets:
@@ -54,7 +54,7 @@ def scan_s3():
             # object count + size
             try:
                 objects = s3_client.list_objects_v2(Bucket=name)
-                contents = objects.get('Content', [])
+                contents = objects.get('Contents', [])
                 data['object_count'] = len(contents)
                 data['size_kb'] = round(
                     sum(o['Size'] for o in contents) / 1024, 2
@@ -105,7 +105,7 @@ def scan_s3():
             data['score'] = sum([
                 data['versioning'] == 'Enabled',
                 data['encryption'] != 'None',
-                data['public_block'] == True,
+                data['public_blocked'] == True,
             ])
 
             print(f"\n Bucket: {name}")
@@ -214,7 +214,7 @@ def scan_iam():
             username = user['UserName']
             data = {
                 'username': username,
-                'created': user['CreationDate'].strftime('%Y-%m-%d'),
+                'created': user['CreateDate'].strftime('%Y-%m-%d'),
                 'last_login': user.get('PasswordLastUsed', None),
                 'issues': []
             }
@@ -246,7 +246,7 @@ def scan_iam():
 
                     if key['Status'] == 'Active' and age_days > 90:
                         data['issues'].append(f"Access key {key['AccessKeyId']} is {age_days} days old")
-                    data['access_keys'].append[key_data]
+                    data['access_keys'].append(key_data)
 
                     # Admin check via groups
                     groups = iam_client.list_groups_for_user(UserName=username)['Groups']
@@ -256,7 +256,7 @@ def scan_iam():
                             GroupName=group
                         )['AttachedPolicies']
                         for policy in group_policies:
-                            if policy['PolicyName'] == 'AdminstratorAccess':
+                            if policy['PolicyName'] == 'AdministratorAccess':
                                 data['issues'].append(f'Admin access via group: {group}')
 
                     print(f"\n  User    : {username}")
@@ -268,7 +268,7 @@ def scan_iam():
                         for issue in data['issues']:
                             print(f"  ⚠  {issue}")
 
-                    report['users'].append(data)
+            report['users'].append(data)
 
     except ClientError as e:
         log(f"IAM user scan error: {e.response['Error']['Message']}")
@@ -285,7 +285,7 @@ def scan_iam():
                 'member_count': len(members['Users'])
             })
 
-            print(f"\n Group: {group['GroupName']} ({len(members['Users'])} member(s)")
+            print(f"\n Group: {group['GroupName']} ({len(members['Users'])} member(s))")
     except ClientError as e:
         log(f"IAM group scan error: {e.response['Error']['Message']}")
 
@@ -322,9 +322,59 @@ def save_report(data):
 
     try:
         with open(REPORT_FILE, 'w') as f:
-            json.dum(data, f, indent=2, default=str)
+            json.dump(data, f, indent=2, default=str)
         log(f"Report saved: {REPORT_FILE}")
     except Exception  as e:
         log(f"Error saving report: {e}")
     
 
+
+# SUMMARY 
+def print_summary(s3_data, ec2_data, iam_data):
+    section('Summary')
+
+    total_issues = sum(len(b['issues']) for b in s3_data) + \
+                   sum(len(i['issues']) for i in ec2_data) + \
+                   sum(len(u['issues']) for u in iam_data['users'])
+    
+    print(f"\n S3: {len(s3_data)} bucket(s)")
+    print(f"   EC2: {len(ec2_data)} instance(s)")
+    print(f"   IAM: {len(iam_data['users'])} user(s)    |  "
+          f"{len(iam_data['groups'])} group(s)"
+          f"{len(iam_data['roles'])} role(s)")
+    print(f"\n Total issues found {total_issues}")
+
+    if total_issues == 0:
+        print(' Result : ALL CLEAR')
+    else:
+        print(f"Result: {total_issues} issue(s) - review report")
+
+    print(f"\n Report : {REPORT_FILE}")
+
+
+# MAIN
+if __name__ == "__main__":
+    print("\n" + "-" * 45)
+    print("  AWS Resource Reporter")
+    print(f"  {TIMESTAMP}")
+    print("-" * 45)
+
+    s3_data = scan_s3()
+    ec2_data = scan_ec2()
+    iam_data = scan_iam()
+
+    full_report = {
+        'timestamp': TIMESTAMP,
+        'region': REGION,
+        's3': s3_data,
+        'ec2': ec2_data,
+        'iam': iam_data
+    }
+
+
+    save_report(full_report)
+    print_summary(s3_data, ec2_data, iam_data)
+
+    print("\n" + "-" * 45)
+    print("  Done.")
+    print("-" * 45 + "\n")
