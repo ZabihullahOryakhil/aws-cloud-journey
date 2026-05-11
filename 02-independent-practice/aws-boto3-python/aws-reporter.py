@@ -193,3 +193,138 @@ def scan_ec2():
 
     return report
 
+
+# IAM Scan
+def scan_iam():
+    section("IAM")
+    report = {
+        'users': [],
+        'groups': [],
+        'roles': [],
+        'policies': []
+    }
+
+    # User
+    try:
+
+        users = iam_client.list_users()['Users']
+        log(f"Found {len(users)} user(s)")
+
+        for user in users:
+            username = user['UserName']
+            data = {
+                'username': username,
+                'created': user['CreationDate'].strftime('%Y-%m-%d'),
+                'last_login': user.get('PasswordLastUsed', None),
+                'issues': []
+            }
+
+            # Format last Login
+            if data['last_login']:
+                data['last_login'] = data['last_login'].strftime('%Y-%m-%d')
+            else:
+                data['last_login'] = "Never"
+                data['issues'].append('Password never used')
+
+                # MFA Check
+                mfa = iam_client.list_mfa_devices(UserName=username)
+                data['mfa'] = len(mfa['MFADevices']) > 0
+                if not data['mfa']:
+                    data['issues'].append('No MFA Found or Enabled')
+
+                keys = iam_client.list_access_keys(UserName=username)
+                data['access_keys'] = []
+                for key in keys['AccessKeyMetadata']:
+                    created = key['CreationDate']
+                    now = datetime.now(timezone.utc)
+                    age_days = (now - created).days
+                    key_data = {
+                        'id': key['AccessKeyId'],
+                        'status': key['Status'],
+                        'age_days': age_days
+                    }
+
+                    if key['Status'] == 'Active' and age_days > 90:
+                        data['issues'].append(f"Access key {key['AccessKeyId']} is {age_days} days old")
+                    data['access_keys'].append[key_data]
+
+                    # Admin check via groups
+                    groups = iam_client.list_groups_for_user(UserName=username)['Groups']
+                    data['groups'] = [g['GroupName'] for g in groups]
+                    for group in data['groups']:
+                        group_policies = iam_client.list_attached_group_policies(
+                            GroupName=group
+                        )['AttachedPolicies']
+                        for policy in group_policies:
+                            if policy['PolicyName'] == 'AdminstratorAccess':
+                                data['issues'].append(f'Admin access via group: {group}')
+
+                    print(f"\n  User    : {username}")
+                    print(f"  Created : {data['created']}")
+                    print(f"  MFA     : {'Yes' if data['mfa'] else 'No'}")
+                    print(f"  Groups  : {', '.join(data['groups']) or 'None'}")
+                    print(f"  Login   : {data['last_login']}")
+                    if data['issues']:
+                        for issue in data['issues']:
+                            print(f"  ⚠  {issue}")
+
+                    report['users'].append(data)
+
+    except ClientError as e:
+        log(f"IAM user scan error: {e.response['Error']['Message']}")
+
+
+    # Groups
+    try:
+        groups = iam_client.list_groups()['Groups']
+        log(f"Found {len(groups)} group(s)")
+        for group in groups:
+            members = iam_client.get_group(GroupName=group['GroupName'])
+            report['groups'].append({
+                'name': group['GroupName'],
+                'member_count': len(members['Users'])
+            })
+
+            print(f"\n Group: {group['GroupName']} ({len(members['Users'])} member(s)")
+    except ClientError as e:
+        log(f"IAM group scan error: {e.response['Error']['Message']}")
+
+
+    try:
+        roles = iam_client.list_roles()['Roles']
+        custom_roles = [
+            r for r in roles
+            if not r['Path'].startswith('/aws-service-role')
+        ]
+        log(f"found {len(custom_roles)} custom role(s)")
+        for role in custom_roles:
+            report['roles'].append({'name': role['RoleName']})
+            print(f"\n Role : {role['RoleName']}")
+    except ClientError as e:
+        log(f"IAM role scan error: {e.response['Error']['Message']}")
+
+
+    try:
+        policies = iam_client.list_policies(Scope='Local')['Policies']
+        log(f"Found {len(policies)} customer policy/policies")
+        for policy in policies:
+            report['policies'].append({'name': policy['PolicyName']})
+            print(f"\n Policy: {policy['PolicyName']}")
+    except ClientError as e:
+        log(f"IAM policy scan error: {e.response['Error']['Message']}")
+
+    return report
+
+
+# SAVE report
+def save_report(data):
+    section("Saving Report")
+
+    try:
+        with open(REPORT_FILE, 'w') as f:
+            json.dum(data, f, indent=2, default=str)
+        log(f"Report saved: {REPORT_FILE}")
+    except Exception  as e:
+        log(f"Error saving report: {e}")
+    
+
