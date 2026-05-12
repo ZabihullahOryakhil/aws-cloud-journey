@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: first CloudFormation template - creates an S3 bucket
+
+# ── Parameters ────────────────────────────────────────
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the S3 bucket to create
+    Default: my-cfn-bucket-2026
+
+  EnableVersioning:
+    Type: String
+    Description: Enable versioning on the bucket
+    Default: Suspended
+    AllowedValues:
+      - Enabled
+      - Suspended
+
+# ── Resources ─────────────────────────────────────────
+Resources:
+
+  # S3 Bucket
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: !Ref EnableVersioning
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls:       true
+        BlockPublicPolicy:     true
+        IgnorePublicAcls:      true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: CreatedBy
+          Value: CloudFormation
+        - Key: Environment
+          Value: Practice
+
+# ── Outputs ───────────────────────────────────────────
+Outputs:
+  BucketName:
+    Description: Name of the created bucket
+    Value: !Ref MyS3Bucket
+
+  BucketArn:
+    Description: ARN of the created bucket
+    Value: !GetAtt MyS3Bucket.Arn
