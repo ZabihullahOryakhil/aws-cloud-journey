@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-05-13_17-00-46",
+  "region": "us-east-1",
+  "s3": [
+    {
+      "name": "new-janan-1235",
+      "issues": [
+        "Versioning not enabled"
+      ],
+      "region": "us-east-1",
+      "object_count": 0,
+      "size_kb": 0.0,
+      "versioning": "Disabled",
+      "encryption": "AES256",
+      "public_blocked": true,
+      "score": 2
+    },
+    {
+      "name": "new-janan1234",
+      "issues": [
+        "Versioning not enabled"
+      ],
+      "region": "us-east-1",
+      "object_count": 5,
+      "size_kb": 1.12,
+      "versioning": "Disabled",
+      "encryption": "AES256",
+      "public_blocked": true,
+      "score": 2
+    },
+    {
+      "name": "new-janan123456",
+      "issues": [
+        "Versioning not enabled"
+      ],
+      "region": "us-east-1",
+      "object_count": 1,
+      "size_kb": 0.05,
+      "versioning": "Disabled",
+      "encryption": "AES256",
+      "public_blocked": true,
+      "score": 2
+    }
+  ],
+  "ec2": [],
+  "iam": {
+    "users": [
+      {
+        "username": "MohammadAlyas",
+        "created": "2025-08-02",
+        "last_login": "2026-05-10",
+        "issues": []
+      }
+    ],
+    "groups": [
+      {
+        "name": "Admin",
+        "member_count": 1
+      }
+    ],
+    "roles": [],
+    "policies": []
+  }
+}

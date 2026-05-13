@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Complete EC2 setup - VPC, Subnet, Security Group, EC2
+
+# ── Parameters 
+Parameters:
+
+  EnvironmentName:
+    Type: String
+    Default: Practice
+    AllowedValues:
+      - Practice
+      - Staging
+      - Production
+
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+
+  YourIP:
+    Type: String
+    Description: Your IP address for SSH access (x.x.x.x/32)
+    Default: 0.0.0.0/0
+
+# ── Mappings
+Mappings:
+  RegionAMI:
+    us-east-1:
+      AMI: ami-0c02fb55956c7d316
+    us-west-2:
+      AMI: ami-0e34e7b9ca0ace12d
+    eu-west-1:
+      AMI: ami-0d71ea30463e0ff49
+
+# ── Resources ─
+Resources:
+
+  # ── VPC 
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport:   true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-VPC"
+
+  # ── Internet Gateway 
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-IGW"
+
+  # Attach IGW to VPC
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:             !Ref MyVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # ── Subnet 
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:               !Ref MyVPC
+      CidrBlock:           10.0.1.0/24
+      AvailabilityZone:    !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-PublicSubnet"
+
+  # ── Route Table 
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-RouteTable"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId:         !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:            !Ref InternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:     !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # ── Security Group 
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort:   22
+          ToPort:     22
+          CidrIp:     !Ref YourIP
+        - IpProtocol: tcp
+          FromPort:   80
+          ToPort:     80
+          CidrIp:     0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp:     0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-SG"
+
+  # ── EC2 Instance ──
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    DependsOn: AttachGateway
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId:      !FindInMap [RegionAMI, !Ref AWS::Region, AMI]
+      SubnetId:     !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-Server"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "<h1>Hello from CloudFormation</h1>
+          <p>Environment: ${EnvironmentName}</p>
+          <p>Instance: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" \
+          > /var/www/html/index.html
+
+# ── Outputs ───
+Outputs:
+
+  VpcId:
+    Description: VPC ID
+    Value: !Ref MyVPC
+
+  PublicSubnetId:
+    Description: Public Subnet ID
+    Value: !Ref PublicSubnet
+
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref WebSecurityGroup
+
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref MyEC2Instance
+
+  PublicIP:
+    Description: Public IP of EC2 instance
+    Value: !GetAtt MyEC2Instance.PublicIp
+
+  WebsiteURL:
+    Description: URL to access the web server
+    Value: !Sub "http://${MyEC2Instance.PublicIp}"

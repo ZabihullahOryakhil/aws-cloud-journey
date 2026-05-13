@@ -6,7 +6,7 @@ Parameters:
   BucketName:
     Type: String
     Description: Name of the S3 bucket to create
-    Default: my-cfn-bucket-2026
+    Default: janan3322
 
   EnableVersioning:
     Type: String
@@ -25,7 +25,7 @@ Resources:
     Properties:
       BucketName: !Ref BucketName
       VersioningConfiguration:
-        Status: !Ref EnableVersioning
+        Status: Suspended
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
