@@ -23,7 +23,7 @@ Parameters:
   YourIP:
     Type: String
     Description: Your IP address for SSH access (x.x.x.x/32)
-    Default: 0.0.0.0/0
+    Default: 149.22.84.163/32
 
 # ── Mappings
 Mappings:
@@ -141,7 +141,7 @@ Resources:
           yum install -y httpd
           systemctl start httpd
           systemctl enable httpd
-          echo "<h1>Hello from CloudFormation</h1>
+          echo "<h1>Hello from CloudFormation ZabihullahOryakhil</h1>
           <p>Environment: ${EnvironmentName}</p>
           <p>Instance: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" \
           > /var/www/html/index.html
