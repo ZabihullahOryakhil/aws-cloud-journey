@@ -23,7 +23,7 @@ Parameters:
   YourIP:
     Type: String
     Description: Your IP address for SSH access (x.x.x.x/32)
-    Default: 149.22.84.163/32
+    Default: 0.0.0.0/0
 
 # ── Mappings
 Mappings:
