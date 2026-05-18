@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Master stack - orchestrates network, security, compute
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: Practice
+
+  InstanceType:
+    Type: String
+    Default: t2.micro
+  
+  TemplatesBucket:
+    Type: String
+    Description: S3 Bucket where nested templates are stored
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${TemplatesBucket}.s3.amazonaws.com/network.yaml"
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+      TimeoutInMinutes: 10
+
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
+    Properties:
+      TemplateURL: !Sub "https://${TemplatesBucket}.s3.amazonaws.com/security.yaml"
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        VpcId: !GetAtt NetworkStack.Outputs.VpcId
+      TimeoutInMinutes: 10
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SecurityStack
+    Properties:
+      TemplateURL: !Sub "https://${TemplatesBucket}.s3.amazonaws.com/compute.yaml"
+      Parameters:
+        EnvironmentName:     !Ref EnvironmentName
+        InstanceType:        !Ref InstanceType
+        SubnetId:            !GetAtt NetworkStack.Outputs.SubnetId
+        SecurityGroupId:     !GetAtt SecurityStack.Outputs.SecurityGroupId
+        InstanceProfileArn:  !GetAtt SecurityStack.Outputs.InstanceProfileArn
+      TimeoutInMinutes: 15
+
+
+Outputs:
+  WebURL:
+    Description: Website URL
+    Value: !GetAtt ComputeStack.Outputs.WebURL
+
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !GetAtt ComputeStack.Outputs.InstanceId
+
+  VpcId:
+    Description: VPC ID
+    Value: !GetAtt NetworkStack.Outputs.VpcId
