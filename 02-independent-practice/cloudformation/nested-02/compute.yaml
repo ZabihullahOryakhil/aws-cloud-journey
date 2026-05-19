@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Compute Layer - EC2 Instance
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  
+  InstanceType:
+    Type: String
+    Default: t2.micro
+
+  SubnetId:
+    Type: String
+
+  SecurityGroup:
+    Type: String
+  InstanceProfilename:
+    Type: String
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Sub "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref InstanceProfileName
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      Tags:
+        - key: Name
+          Value: !Sub "${EnvironmentName}-Server"
+      
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "<h1> Hello from ${EnvironmentName} (Second Nested Stack)</h1><hr><p>Munir Miasi is the <strong>GAYEST PERSON EVER</strong></p>" > /var/www/html/index.html
+
+Outputs:
+  InstanceId:
+    Value: !Ref EC2Instance
+  PublicIP:
+    Value: !GetAtt EC2Instance.PublicIP
+  WebURL:
+    Value: !Sub "http://${EC2Instance.PublicIp}"

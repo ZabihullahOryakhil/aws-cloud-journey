@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Storage Layer - S3 Bucket
+
+Parameters:
+  EnvironmentName:
+    Type: String
+
+
+Resources:
+  Type: AWS::S3:Bucket
+  Properties:
+    BucketEncryption:
+      ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+          SSEAlgorithm: AES256
+    Tags:
+      - Key: Environment
+        Value: !Ref EnvironmentName
+
+Outputs:
+  BucketName:
+    Value: !Ref AppBucket
+  BucketArn:
+    Value: !GetAtt AppBucket.Arn
+    
