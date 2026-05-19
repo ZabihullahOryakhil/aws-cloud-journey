@@ -5,15 +5,13 @@ Parameters:
   EnvironmentName:
     Type: String
 
-
   VpcCIDR:
     Type: String
     Default: 10.0.0.0/16
 
-    SubnetCIDR:
-      Type: String
-      Default: 10.0.1.0/24
-
+  SubnetCIDR:
+    Type: String
+    Default: 10.0.1.0/24
 
 Resources:
 
@@ -21,7 +19,7 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref VpcCIDR
-      EnableDnsSupport: true
+      EnableDnsSupport:   true
       EnableDnsHostnames: true
       Tags:
         - Key: Name
@@ -34,7 +32,6 @@ Resources:
         - Key: Name
           Value: !Sub "${EnvironmentName}-IGW"
 
-  
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:

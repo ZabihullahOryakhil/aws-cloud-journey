@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Security layer - Security Group, IAM Role
 
 Parameters:
-  Environment:
+  EnvironmentName:
     Type: String
 
   VpcId:
@@ -16,43 +16,41 @@ Resources:
       GroupDescription: Allow SSH and HTTP
       VpcId: !Ref VpcId
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort:   22
-        ToPort:     22
-        CidrIp:     0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort:   80
-        ToPort:     80
-        CidrIp:     0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort:   22
+          ToPort:     22
+          CidrIp:     0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort:   80
+          ToPort:     80
+          CidrIp:     0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Sub "${EnvironmentName}-SG"
-
 
   EC2Role:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${EnvironmentName}-EC2Role"
       AssumeRolePolicyDocument:
-        version: '2012-10-17'
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               Service: ec2.amazonaws.com
-            Action: sts.AssumeRole
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
 
-  
   EC2InstanceProfile:
-    Type: AWS::EC2::InstanceProfile
+    Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-      - !Ref EC2Role
+        - !Ref EC2Role
 
 Outputs:
   SecurityGroupId:
     Value: !Ref WebSecurityGroup
-  
+
   InstanceProfileArn:
     Value: !GetAtt EC2InstanceProfile.Arn

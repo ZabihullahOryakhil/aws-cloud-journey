@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey":   "EnvironmentName",
+    "ParameterValue": "Practice"
+  },
+  {
+    "ParameterKey":   "InstanceType",
+    "ParameterValue": "t2.micro"
+  },
+  {
+    "ParameterKey":   "TemplatesBucket",
+    "ParameterValue": "cfn-templates-janan-2026"
+  }
+]

@@ -9,12 +9,13 @@ Parameters:
   InstanceType:
     Type: String
     Default: t2.micro
-  
+
   TemplatesBucket:
     Type: String
-    Description: S3 Bucket where nested templates are stored
+    Description: S3 bucket where nested templates are stored
 
 Resources:
+
   NetworkStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -44,8 +45,7 @@ Resources:
         SubnetId:            !GetAtt NetworkStack.Outputs.SubnetId
         SecurityGroupId:     !GetAtt SecurityStack.Outputs.SecurityGroupId
         InstanceProfileArn:  !GetAtt SecurityStack.Outputs.InstanceProfileArn
-      TimeoutInMinutes: 15
-
+      TimeoutInMinutes: 30
 
 Outputs:
   WebURL:

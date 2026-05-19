@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Computer Layer - EC2 Instance
+Description: Compute layer - EC2 Instance
 
 Parameters:
   EnvironmentName:
-    String
+    Type: String
 
   InstanceType:
     Type: String
@@ -12,12 +12,11 @@ Parameters:
   SubnetId:
     Type: String
 
-  SecurityGroup:
-    Type: String
-  
-  InstanceProfileArn:
+  SecurityGroupId:
     Type: String
 
+  InstanceProfileArn:
+    Type: String
 
 Mappings:
   RegionAMI:
@@ -26,30 +25,29 @@ Mappings:
     us-west-2:
       AMI: ami-0e34e7b9ca0ace12d
 
-
 Resources:
+
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: !Ref InstanceType
-      ImageId: !FindInMap [RegionAMI, !Ref AWS::Region, AMI]
-      SubnetId: !Ref SubnetId
-      IamInstanceProfile: !Ref InstanceProfileArn
+      InstanceType:        !Ref InstanceType
+      ImageId:             !FindInMap [RegionAMI, !Ref AWS::Region, AMI]
+      SubnetId:            !Ref SubnetId
+      IamInstanceProfile:  !Ref InstanceProfileArn
       SecurityGroupIds:
         - !Ref SecurityGroupId
-      
       Tags:
-        - key: Name
+        - Key: Name
           Value: !Sub "${EnvironmentName}-Server"
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          yum update -y
           yum install -y httpd
           systemctl start httpd
           systemctl enable httpd
           echo "<h1>${EnvironmentName} Server</h1>
-          <p>Welcome to Zabihullah's First nested CloudFormation Stack</p>" \
+          <p>Built My first nested CloudFormation stack.</p> <hr>
+          <p>Munir Miasi is the server administrator.</p>" \
           > /var/www/html/index.html
 
 Outputs:
@@ -57,7 +55,7 @@ Outputs:
     Value: !Ref EC2Instance
 
   PublicIP:
-    Value: !GetAtt EC2Instance.PublicIP
+    Value: !GetAtt EC2Instance.PublicIp
 
   WebURL:
-    Value: !Sub "http://${EC2Instance.PublicIP}"
+    Value: !Sub "http://${EC2Instance.PublicIp}"

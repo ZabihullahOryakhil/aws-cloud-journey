@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Security Layer - Security Groups
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  VPCId:
+    Type: String
+    Description: VPC ID from the network Stack
+
+Resources:
+  WebSecurityGroup:
+    Properties:
+      GroupDescription: Allow HTTP and HTTPS from anywhere
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0                     # Allow HTTP from internet
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-Web-SG"
+
+Outputs:
+  WebSecurityGroupId:
+    Value: !Ref WebSecurityGroup
+    Export:
+      Name: !Sub "${EnvironmentName}-WebSGId"
