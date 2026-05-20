@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Master Stack - Orchestrating all nested stacks (Network → Storage → IAM → Security → Compute)
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: Practice
+    AllowedValues: [Practice, Staging, Production]
+  InstanceType:
+    Type: String
+    Default: t2.micro
+
+Resources:
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/storage.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+
+  
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/network.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/iam.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        BucketArn: !GetAtt StorageStack.Outputs.BucketArn
+
+  
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/security.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        VPCId: !GetAtt NetworkStack.Outputs.VPCId
+
+
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/compute.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        InstanceType: !Ref InstanceType
+        SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
+        SecurityGroupId: !GetAtt SecurityStack.Outputs.WebSecurityGroupId
+        InstanceProfileName: !GetAtt IAMStack.Outputs.InstanceProfileName
+
+
+Outputs:
+  BucketName:
+    Value: !GetAtt StorageStack.Outputs.BucketName
+    Description: Name of the S3 Bucket
+
+  InstanceId:
+    Value: !GetAtt ComputeStack.Outputs.InstanceId
+    Description: ID of the EC2 Instance
+
+  PublicIP:
+    Value: !GetAtt ComputeStack.Outputs.PublicIP
+    Description: Public IP of the EC2 Instance
+
+  WebURL:
+    Value: !GetAtt ComputeStack.Outputs.WebURL
+    Description: URL to access the web server
+
+  VPCId:
+    Value: !GetAtt NetworkStack.Outputs.VPCId
+    Description: VPC ID

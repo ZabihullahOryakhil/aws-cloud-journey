@@ -7,15 +7,16 @@ Parameters:
 
 
 Resources:
-  Type: AWS::S3:Bucket
-  Properties:
-    BucketEncryption:
-      ServerSideEncryptionConfiguration:
-        - ServerSideEncryptionByDefault:
-          SSEAlgorithm: AES256
-    Tags:
-      - Key: Environment
-        Value: !Ref EnvironmentName
+  AppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
 
 Outputs:
   BucketName:

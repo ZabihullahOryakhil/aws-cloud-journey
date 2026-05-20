@@ -4,23 +4,20 @@ Description: IAM Layer - Role and Instance Profile for EC2
 Parameters:
   EnvironmentName:
     Type: String
-
   BucketArn:
     Type: String
-    Description: ARN of the S3 bucket from Storage Stack
 
-
-Resourcces:
+Resources:
   EC2Role:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2010-10-17'
+        Version: '2012-10-17'                   
         Statement:
           - Effect: Allow
-            Principle:
+            Principal:
               Service: ec2.amazonaws.com
-            Action: sts.AssumeRole
+            Action: sts:AssumeRole               
 
       Policies:
         - PolicyName: S3AccessPolicy
@@ -35,13 +32,12 @@ Resourcces:
                 Resource:
                   - !Ref BucketArn
                   - !Sub "${BucketArn}/*"
-  
+
   EC2InstanceProfile:
-    Type: AWS::IAM::EC2InstanceProfile
+    Type: AWS::IAM::InstanceProfile              
     Properties:
       Roles:
-      - !Ref EC2InstanceProfile
-
+        - !Ref EC2Role
 
 Outputs:
   InstanceProfileName:

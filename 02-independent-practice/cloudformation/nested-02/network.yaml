@@ -1,13 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Network Layer - VPC, Internet Gateway, Public Subnet and Routing
-
+Description: Network Layer - VPC, IGW, Public Subnet
 
 Parameters:
   EnvironmentName:
     Type: String
     Default: Practice
-    Description: Name of the Environment (Practice, Staging, Production)
-
 
 Resources:
   VPC:
@@ -15,55 +12,62 @@ Resources:
     Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
-      EnableDnsHostname: true
+      EnableDnsHostnames: true
       Tags:
-      - Key: Name
-        Value: !Sub "${EnvironmentName}-VPC"
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-VPC"
 
-# InternetGateway
-InternetGateway:
-  Type: AWS::EC2::InternetGateway
-  Properties:
-    VpcId: !Ref VPC
-    InternetGatewayId: !Ref InternetGateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-IGW"
 
-# Public Subnet
-PublicSubnet:
-  Type: AWS::EC2::Subnet
-  Properties:
-    VpcId: !Ref VPC
-    CidrBlock: 10.0.1.0/24
-    AvailabilityZone: !Select [0, !GetAZs '']
-    MapPublicIpOnLaunch: true
-    Tags:
-      - Key: Name
-        Value: !Sub "${EnvironmentName}-Public-Subnet"
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
 
-# Route Table
-RouteTable:
-  Type: AWS::EC2::RouteTable
-  Properties:
-    VpcId: !Ref VPC
-    Tags:
-      - key: Name
-        Value: !Sub "${EnvironmentName}-Public-RT"
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-Public-Subnet"
 
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-Public-RT"
 
-PublicRoute:
-  Type: AWS::EC2::Route
-  DependsOn: AttachGateway
-  Properties:
-    RouteTableId: !Ref RouteTable
-    DestinationCidrBlock: 0.0.0.0/0
-    GatewayId: !Ref InternetGateway
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
 
+  SubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref RouteTable
 
-SubnetAssociation:
-  Type: AWS::EC2::SubnetRouteTableAssocation
-  Properties:
-    SubnetId: !Ref PublicSubnet
-    RouteTableId: !Ref RouteTable
-
+Outputs:
+  VPCId:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${EnvironmentName}-VPCId"
 
 Outputs:
   VPCId:
@@ -75,4 +79,3 @@ Outputs:
     Value: !Ref PublicSubnet
     Export:
       Name: !Sub "${EnvironmentName}-PublicSubnetId"
-
