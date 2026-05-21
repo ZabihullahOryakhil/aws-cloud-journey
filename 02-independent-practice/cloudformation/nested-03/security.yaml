@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Security Layer - Creating Security Groups
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+
+  VpcId:
+    Type: String
+
+
+Resources:
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP/HTTPS traffic
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol:
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-web-sg"
+
+
+Outputs:
+  WebServerSecurityGroupId:
+    Value: !Ref WebSecurityGroup # Self Info: Security Group ID to be used by Compute Layer
+    Export:
+      Name: !Sub "${EnvironmentName}-WebServerSGId"
