@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Storage Layer - Managing all persistent storage resources.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+
+Resources:
+  AppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+
+      VersioningConfiguration:
+        Status: Disabled
+
+      
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+      
+      Tags:
+      - Key: Name
+        Value: !Sub "${EnvironmentName}-app-Bucket"
+      - Key: Environment
+        Value: !Ref EnvironmentName
+      - Key: Purpose
+        Value: ApplicationStorage
+
+Outputs:
+  BucketName:
+    Value: !Ref AppBucket
+    Export:
+      Name: !Sub "${EnvironmentName}-AppBucketName"
+
+  
+  BucketArn:
+    Value: !GetAtt AppBucket.Arn
+    Export:
+      Name: !Sub "${EnvironmentName}-AppBucketArn"
+
