@@ -6,7 +6,7 @@ Parameters:
     Type: String
     Default: dev
 
-  VpcId:
+  VPCId:
     Type: String
 
 
@@ -21,7 +21,7 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-        - IpProtocol:
+        - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0

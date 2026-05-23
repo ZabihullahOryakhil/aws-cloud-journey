@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Master Stack - Main orchestration template
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+
+  
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t3.micro, t3.small, t2.micro]
+
+
+Resources:
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/storage.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+
+  
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/network.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: StorageStack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/iam.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        BucketArn: !GetAtt StorageStack.Outputs.BucketArn
+  
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/security.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        VPCId: !GetAtt NetworkStack.Outputs.VPCId
+
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [NetworkStack, SecurityStack, IAMStack]
+    Properties:
+      TemplateURL: https://janan3378.s3.amazonaws.com/compute.yaml
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        InstanceType: !Ref InstanceType
+        SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
+        SecurityGroupId: !GetAtt SecurityStack.Outputs.WebServerSecurityGroupId
+        InstanceProfileName: !GetAtt IAMStack.Outputs.InstanceProfileName
+
+
+Outputs:
+  BucketName:
+    Value: !GetAtt StorageStack.Outputs.BucketName
+
+  WebServerPublicIP:
+    Value: !GetAtt ComputeStack.Outputs.PublicIP
+
+  WebURL:
+    Value: !GetAtt ComputeStack.Outputs.WebURL
+
+  VPCId:
+    Value: !GetAtt NetworkStack.Outputs.VPCId
+
