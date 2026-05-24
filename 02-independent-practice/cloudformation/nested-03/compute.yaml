@@ -34,6 +34,7 @@ Resources:
           systemctl start httpd
           systemctl enable httpd
           echo "<h1>Hello from ${EnvironmentName} - Private Subnet</h1>" > /var/www/html/index.html
+          echo "<h2>My Third nested stack - With Private Subnet" >> /var/www/html/index.html
 
       Tags:
         - Key: Name
