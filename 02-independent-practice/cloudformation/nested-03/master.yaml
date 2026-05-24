@@ -7,13 +7,10 @@ Parameters:
     Default: dev
     AllowedValues: [dev, staging, prod]
 
-
-  
   InstanceType:
     Type: String
-    Default: t2.micro
-    AllowedValues: [t3.micro, t3.small, t2.micro]
-
+    Default: t2.micro               # Changed back to free tier
+    AllowedValues: [t2.micro, t3.micro, t3.small]
 
 Resources:
   StorageStack:
@@ -23,7 +20,6 @@ Resources:
       Parameters:
         EnvironmentName: !Ref EnvironmentName
 
-  
   NetworkStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -39,35 +35,37 @@ Resources:
       Parameters:
         EnvironmentName: !Ref EnvironmentName
         BucketArn: !GetAtt StorageStack.Outputs.BucketArn
-  
+
   SecurityStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
     Properties:
       TemplateURL: https://janan3378.s3.amazonaws.com/security.yaml
       Parameters:
         EnvironmentName: !Ref EnvironmentName
         VPCId: !GetAtt NetworkStack.Outputs.VPCId
 
-
   ComputeStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: [NetworkStack, SecurityStack, IAMStack]
+    DependsOn: 
+      - NetworkStack
+      - SecurityStack
+      - IAMStack
     Properties:
       TemplateURL: https://janan3378.s3.amazonaws.com/compute.yaml
       Parameters:
         EnvironmentName: !Ref EnvironmentName
         InstanceType: !Ref InstanceType
-        SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
+        SubnetId: !GetAtt NetworkStack.Outputs.PrivateSubnetId
         SecurityGroupId: !GetAtt SecurityStack.Outputs.WebServerSecurityGroupId
         InstanceProfileName: !GetAtt IAMStack.Outputs.InstanceProfileName
-
 
 Outputs:
   BucketName:
     Value: !GetAtt StorageStack.Outputs.BucketName
 
-  WebServerPublicIP:
-    Value: !GetAtt ComputeStack.Outputs.PublicIP
+  InstanceId:
+    Value: !GetAtt ComputeStack.Outputs.InstanceId
 
   WebURL:
     Value: !GetAtt ComputeStack.Outputs.WebURL
@@ -75,3 +73,5 @@ Outputs:
   VPCId:
     Value: !GetAtt NetworkStack.Outputs.VPCId
 
+  SubnetType:
+    Value: "Private Subnet (No Public IP)"

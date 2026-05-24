@@ -5,8 +5,6 @@ Parameters:
   EnvironmentName:
     Type: String
     Default: dev
-    AllowedValues: [dev, staging, prod]
-
 
 Resources:
   AppBucket:
@@ -17,25 +15,20 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
+      VersioningConfiguration:
+        Status: Suspended
 
-      Versioning:
-        Status: Disabled
-
-      
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-      
       Tags:
-      - Key: Name
-        Value: !Sub "${EnvironmentName}-app-Bucket"
-      - Key: Environment
-        Value: !Ref EnvironmentName
-      - Key: Purpose
-        Value: ApplicationStorage
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-app-bucket"
+        - Key: Environment
+          Value: !Ref EnvironmentName
 
 Outputs:
   BucketName:
@@ -43,9 +36,7 @@ Outputs:
     Export:
       Name: !Sub "${EnvironmentName}-AppBucketName"
 
-  
   BucketArn:
     Value: !GetAtt AppBucket.Arn
     Export:
       Name: !Sub "${EnvironmentName}-AppBucketArn"
-

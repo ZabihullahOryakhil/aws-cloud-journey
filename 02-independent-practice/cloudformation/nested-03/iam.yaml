@@ -5,12 +5,8 @@ Parameters:
   EnvironmentName:
     Type: String
     Default: dev
-    AllowedValues: [dev, staging, prod]
-
-  
   BucketArn:
     Type: String
-
 
 Resources:
   EC2InstanceRole:
@@ -34,38 +30,18 @@ Resources:
                   - s3:ListBucket
                   - s3:GetObject
                   - s3:PutObject
-                  - s3:DeleteObject
                 Resource:
                   - !Ref BucketArn
                   - !Sub "${BucketArn}/*"
 
-
-
-      Tags:
-      - Key: Name
-        Value: !Sub "${EnvironmentName}-ec2-role"
-
-      - Key: Environment
-        Value: !Ref EnvironmentName
-
-
-
   EC2InstanceProfile:
-      Type: AWS::IAM::InstanceProfile
-      Properties:
-        Roles:
-          - !Ref EC2InstanceRole
-        Tags:
-          - Key: Name
-            Value: !Sub "${EnvironmentName}-ec2-instance-profile"
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2InstanceRole
 
 Outputs:
   InstanceProfileName:
     Value: !Ref EC2InstanceProfile
     Export:
       Name: !Sub "${EnvironmentName}-EC2InstanceProfile"
-
-  EC2RoleArn:
-    Value: !GetAtt EC2InstanceRole.Arn
-    Export:
-      Name: !Sub "${EnvironmentName}-EC2RoleArn"

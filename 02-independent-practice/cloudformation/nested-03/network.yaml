@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Network Layer - Creating VPC, Subnets, Internet Gateway.
+Description: Modular Network Layer - Public + Private Subnets with NAT Gateway
 
 Parameters:
   EnvironmentName:
@@ -7,39 +7,31 @@ Parameters:
     Default: dev
     AllowedValues: [dev, staging, prod]
 
-
-  VpcCidr:
-    Type: String
-    Default: 10.0.0.0/16
-
 Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VpcCidr
+      CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
         - Key: Name
           Value: !Sub "${EnvironmentName}-vpc"
-        - Key: Environment
-          Value: !Ref EnvironmentName
 
-  
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
           Value: !Sub "${EnvironmentName}-igw"
-  
+
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
-  
+  #  PUBLIC SUBNET 
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
@@ -53,7 +45,6 @@ Resources:
         - Key: Tier
           Value: Public
 
-  
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -61,13 +52,14 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${EnvironmentName}-public-rt"
-  
+
   PublicRoute:
     Type: AWS::EC2::Route
+    DependsOn: AttachGateway
     Properties:
-    RouteTableId: !Ref PublicRouteTable
-    DestinationCidrBlock: 0.0.0.0/0
-    GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
 
   PublicSubnetAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -75,14 +67,69 @@ Resources:
       SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
 
+  # PRIVATE SUBNET
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-private-subnet"
+        - Key: Tier
+          Value: Private
+
+  
+  NATGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-nat-gateway"
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-private-rt"
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    DependsOn: NATGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway
+
+  PrivateSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRouteTable
+
 Outputs:
   VPCId:
     Value: !Ref VPC
     Export:
       Name: !Sub "${EnvironmentName}-VPCId"
-  
+
   PublicSubnetId:
     Value: !Ref PublicSubnet
     Export:
       Name: !Sub "${EnvironmentName}-PublicSubnetId"
-  
+
+  PrivateSubnetId:
+    Value: !Ref PrivateSubnet
+    Export:
+      Name: !Sub "${EnvironmentName}-PrivateSubnetId"
