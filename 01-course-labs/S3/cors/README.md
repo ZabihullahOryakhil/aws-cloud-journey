@@ -53,3 +53,6 @@ curl -X POST "https://l7m0nxxmp7.execute-api.us-east-1.amazonaws.com/prod/Hello"
   -d '{
     "key": "value"
   }'
+
+## Set CORS on our bucket
+aws s3api put-bucket-cors --bucket cors-janan-33 --cors-configuration file://cors.json
