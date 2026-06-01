@@ -1,0 +1,40 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowExternalAccountToRead",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::157071597010:root"
+            },
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:PutObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::bucket-policy-janan-33",
+                "arn:aws:s3:::bucket-policy-janan-33/*"
+            ]
+        },
+        {
+            "Sid": "DenyDeleteBucketOrFiles",
+            "Effect": "Deny",
+            "NotPrincipal": {
+                "AWS": [
+                    "arn:aws:iam::357912269063:root",
+                    "arn:aws:iam::357912269063:user/ZabihullahOryakhil"
+                ]
+            },
+            "Action": [
+                "s3:DeleteBucket",
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion"
+            ],
+            "Resource": [
+                "arn:aws:s3:::bucket-policy-janan-33",
+                "arn:aws:s3:::bucket-policy-janan-33/*"
+            ]
+            }
+    ]
+}
