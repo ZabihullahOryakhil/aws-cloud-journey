@@ -1,7 +1,3 @@
-# ── This creates the S3 bucket and DynamoDB table
-#    that will store your remote state
-#    Run this ONCE then never touch it again ──────────
-
 provider "aws" {
   region = "us-east-1"
 }
@@ -17,7 +13,7 @@ resource "aws_s3_bucket" "terraform_state" {
 
 resource "aws_s3_bucket_versioning" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
-  versioning_configuration { status = "Enabled" }
+  versioning_configuration { status = "Suspended" }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
