@@ -1,0 +1,18 @@
+Resources:
+  CoolJananUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: "cool-janan"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
+      Policies:
+        - PolicyName: JananCoolPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: IamListAccess
+                Effect: Allow
+                Action:
+                  - 'iam:ListRoles'
+                  - 'iam:ListUsers'
+                Resource: '*'
