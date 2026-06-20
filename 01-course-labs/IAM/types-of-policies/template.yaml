@@ -16,3 +16,20 @@ Resources:
                   - 'iam:ListRoles'
                   - 'iam:ListUsers'
                 Resource: '*'
+
+  
+
+  MyInlinePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: MyInlinePolicy
+      Users:
+        - !Ref CoolJananUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: FullEc2Access
+            Effect: Allow
+            Action:
+              - 'ec2:*'
+            Resource: '*'
