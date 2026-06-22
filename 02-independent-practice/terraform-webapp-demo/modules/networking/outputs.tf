@@ -1,0 +1,16 @@
+output "vpc_id" {
+  value       = aws_vpc.this.id
+}
+
+output "public_subnet_ids" {
+  value       = [for s in aws_subnet.public : s.id]
+}
+
+output "alb_sg_id" {
+  value = aws_security_group.alb.id
+}
+
+output "ec2_sg_id" {
+  value = aws_security_group.ec2.id
+}
+
