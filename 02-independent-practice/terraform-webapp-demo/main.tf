@@ -1,6 +1,6 @@
 # Networking Module
-module "etworking" {
-    source = "value"
+module "networking" {
+    source = "./modules/networking"
 
     project = var.project
     environment = var.environment
@@ -11,7 +11,7 @@ module "etworking" {
 
 # Compute module
 module "compute" {
-  source = "value"
+  source = "./modules/compute"
   
   project        = var.project
   environment    = var.environment
@@ -27,7 +27,7 @@ module "compute" {
 
 # Storage module
 module "storage" {
-  source = "value"
+  source = "./modules/storage"
   
   project = var.project
   environment = var.environment
