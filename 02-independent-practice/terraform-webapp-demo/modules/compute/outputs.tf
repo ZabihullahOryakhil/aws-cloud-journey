@@ -7,11 +7,11 @@ output "alb_arn" {
 }
 
 output "instance_ids" {
-  value = [for i in aws_aws_instance.web : i.id]
+  value = [for i in aws_instance.web : i.id]
 }
 
 
 output "instance_public_ips" {
-  value = [for i in awsaws_instance.web : i.public_ip]
+  value = [for i in aws_instance.web : i.public_ip]
 }
 

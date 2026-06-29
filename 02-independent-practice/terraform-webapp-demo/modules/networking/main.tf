@@ -19,7 +19,7 @@ resource "aws_subnet" "public" {
   map_customer_owned_ip_on_launch = true
 
   tags = {
-    Name = "${var.project}-${var.environment}-public-${each-key}"
+    Name = "${var.project}-${var.environment}-public-${each.key}"
   }
 }
 
