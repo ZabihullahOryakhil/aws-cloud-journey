@@ -27,11 +27,11 @@ resource "aws_instance" "web" {
   user_data = <<-EOT
     #!/bin/bash
     set -e
-    apt-get-update-y
+    apt-get update -y
     apt-get install -y nginx
 
     echo "<h1>Hello from ${var.project}-${var.environment}</h1>
-    <p>Instance: ${hostname}</p>
+    <p>Instance: $${hostname}</p>
     <p>AZ: $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)</p>" \
     > /var/www/html/index.html
 
